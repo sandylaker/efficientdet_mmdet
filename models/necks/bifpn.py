@@ -2,11 +2,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 from mmcv.cnn import ConvModule, xavier_init
+from models.necks.utils import SeparableConv
 
 
 class BiFPN(nn.Module):
     def __init__(self,
-                 in_channels: int,
+                 in_channels: list,
                  out_channels: int,
                  num_outs: int,
                  start_level:int = 0,
@@ -21,6 +22,8 @@ class BiFPN(nn.Module):
                  upsample_cfg: dict = dict(mode='nearest')):
         super(BiFPN, self).__init__()
         assert isinstance(in_channels, list)
+        # add channels for two down-sampled inputs (p6, p7)
+        in_channels.extend([out_channels, out_channels])
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_ins = len(in_channels)
@@ -52,11 +55,20 @@ class BiFPN(nn.Module):
         self.fpn_convs = nn.ModuleList()
         self.stack_bifpn_convs = nn.ModuleList()
 
-        self.conv2 = nn.Conv2d(in_channels[2], in_channels[2], kernel_size=3, stride=2, padding=1)
-        self.conv3 = nn.Conv2d(in_channels[3], in_channels[3], kernel_size=3, stride=2, padding=1)
-        self.conv4 = nn.Conv2d(in_channels[4], in_channels[4], kernel_size=3, stride=4, padding=1)
+        # get p6 and p7
+        # in_channels index should be -3, since the last two elements are equal to out_channels
+        self.input_conv = ConvModule(
+            in_channels=in_channels[-3],
+            out_channels=out_channels,
+            kernel_size=1,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg)
+        self.input_pool_1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.input_pool_2 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        for i in range(self.start_level, self.backbone_end_level):
+        # build laterals
+        # skip the last two level, for which the channels are adjusted with input_conv and pooling
+        for i in range(self.start_level, self.backbone_end_level-2):
             l_conv = ConvModule(
                 in_channels=in_channels[i],
                 out_channels=out_channels,
@@ -103,16 +115,19 @@ class BiFPN(nn.Module):
                 xavier_init(m, distribution='uniform')
 
     def forward(self, inputs):
-        assert len(inputs) == len(self.in_channels)
-        inputs[2] = self.conv2(inputs[2])
-        inputs[3] = self.conv3(inputs[3])
-        inputs[4] = self.conv4(inputs[4])
+        if not isinstance(inputs, list):
+            inputs = list(inputs)
+        p6 = self.input_pool_1(self.input_conv(inputs[-1]))
+        p7 = self.input_pool_2(p6)
+        inputs.extend([p6, p7])
 
         # build laterals
         laterals = [
             lateral_conv(inputs[i + self.start_level])
             for i, lateral_conv in enumerate(self.lateral_convs)
         ]
+        # append the last two levels
+        laterals.extend([p6, p7])
 
         # build top-down and bottom-up with stack
         used_backbone_levels = len(laterals)
@@ -171,17 +186,13 @@ class BiFPNModule(nn.Module):
 
         for jj in range(2):
             for i in range(self.levels - 1):
-                fpn_conv = nn.Sequential(
-                    ConvModule(
-                        in_channels=channels,
-                        out_channels=channels,
-                        kernel_size=3,
-                        padding=1,
-                        conv_cfg=conv_cfg,
-                        norm_cfg=norm_cfg,
-                        act_cfg=act_cfg,
-                        inplace=False)
-                )
+                fpn_conv = SeparableConv(
+                    in_channels=channels,
+                    out_channels=channels,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg,
+                    inplace=False)
                 # the order top-down and then bottom-up
                 self.bifpn_convs.append(fpn_conv)
 
@@ -234,3 +245,16 @@ class BiFPNModule(nn.Module):
         return pathtd
 
 
+if __name__ == '__main__':
+    feats = [
+        torch.rand([4, 40, 128, 128]),
+        torch.rand([4, 112, 64, 64]),
+        torch.rand([4, 320, 32, 32])
+    ]
+    neck = BiFPN(
+        in_channels=[40, 112, 320],
+        out_channels=64,
+        num_outs=5)
+    feats = neck(feats)
+    for f in feats:
+        print(f.shape)

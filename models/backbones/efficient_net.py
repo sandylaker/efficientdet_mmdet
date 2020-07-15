@@ -155,6 +155,8 @@ def load_checkpoint(model: EfficientNet, pretrained:str):
 
 
 class EfficientNetBackBone(EfficientNet):
+    out_indices = (2, 4, 6)
+
     def __init__(self, **kwargs):
         super(EfficientNetBackBone, self).__init__(**kwargs)
 
@@ -187,12 +189,12 @@ class EfficientNetBackBone(EfficientNet):
                 num_repeats = 0
                 stage_index += 1
                 feats.append(x)
-        return feats[2:]
+        return [feats[i] for i in self.out_indices]
 
 
 if __name__ == '__main__':
     device = torch.device('cpu')
-    x = torch.randn(4, 3, 224, 224, dtype=torch.float32).to(device)
+    x = torch.randn(4, 3, 512, 512, dtype=torch.float32).to(device)
     model = EfficientNetBackBone(
         in_channels=3,
         n_classes=13,

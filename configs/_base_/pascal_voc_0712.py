@@ -1,4 +1,4 @@
-dataset_type = 'MyVOCDataset'
+dataset_type = 'VOCDataset'
 # Remember to change this root
 data_root = '/home/lfc199471/data/VOCdevkit/'
 img_size = 512  # Modify
@@ -7,10 +7,10 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=[(500, 500)], keep_ratio=True),   # Modify
+    dict(type='Resize', img_scale=[(img_size, img_size)], keep_ratio=True),   # Modify
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=(img_size, img_size)),
+    dict(type='Pad', size=(img_size, img_size)),    
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
@@ -18,7 +18,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(500, 500),   # Modify
+        img_scale=(img_size, img_size),   # Modify
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -30,21 +30,30 @@ test_pipeline = [
         ])
 ]
 
-batch_size = 32     # Modify
+batch_size = 24     # Modify
 
 data = dict(
     samples_per_gpu=batch_size,
     workers_per_gpu=4,
     train=dict(
-        type=dataset_type,
-        ann_file=data_root + 'VOC2012/ImageSets/Main/train.txt',
-        img_prefix=data_root + 'VOC2012/',
-        pipeline=train_pipeline,),
+        type='RepeatDataset',
+        times=4,
+        dataset=dict(
+            type=dataset_type,
+            ann_file=[
+                data_root + 'VOC2007/ImageSets/Main/trainval.txt',
+                data_root + 'VOC2012/ImageSets/Main/trainval.txt'
+            ],
+            img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
+            pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'VOC2012/ImageSets/Main/val.txt',
-        img_prefix=data_root + 'VOC2012/',
-        pipeline=test_pipeline,),
-)
-
-evaluation=dict(interval=1, metric='mAP')
+        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
+        img_prefix=data_root + 'VOC2007/',
+        pipeline=test_pipeline),
+    test=dict(
+        type=dataset_type,
+        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
+        img_prefix=data_root + 'VOC2007/',
+        pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='mAP')

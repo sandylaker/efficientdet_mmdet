@@ -1,5 +1,3 @@
-_base_ = '_base_/dataset.py'
-
 pretrained = '/home/lfc199471/PycharmProjects/efficientdet_mmdet/pretrained/' \
              'adv-efficientnet-b0-b64d5a18.pth'
 
@@ -17,10 +15,10 @@ model = dict(
         se_rate=0.25,
         dropout_rate=0.2,   # Modify
         drop_connect_rate=0.3,
-        frozen_stages=7),  # Modify
+        frozen_stages=1),  # Modify
     neck=dict(
         type='BiFPN',
-        in_channels=[40, 80, 112, 192, 320],    # Modify
+        in_channels=[40, 112, 320],
         out_channels=64,   # Modify
         num_outs=5,
         start_level=0,
@@ -43,7 +41,7 @@ model = dict(
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
-            target_stds=[1.0, 1.0, 1.0, 1.0]),
+            target_stds=[1.0, 1.0, 2.0, 2.0]),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -66,9 +64,9 @@ train_cfg = dict(
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
-    score_thr=0.02,
-    nms=dict(type='nms', iou_thr=0.5),
-    max_per_img=100)
+    score_thr=0.2,
+    nms=dict(type='nms', iou_thr=0.45),
+    max_per_img=200)
 
 # optimizer
 optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
@@ -80,8 +78,8 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     gamma=0.5,
-    step=[20, 40, 60, 80])
-total_epochs = 100
+    step=[40, 80, 100])
+total_epochs = 120
 
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 # yapf:disable

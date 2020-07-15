@@ -14,8 +14,6 @@ from mmdet.apis import set_random_seed, train_detector
 from mmdet.models import build_detector
 from mmdet.utils import collect_env, get_root_logger
 
-# Use our build_dataset instead of mmdet.datasets.build_dataset
-from dataset import build_dataset
 # Use our build_detector instead of mmdet.models.build_detector
 from models import build_detector
 
@@ -23,6 +21,9 @@ from models import build_detector
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('--build-dataset',
+                        choices=['mmdet', 'ours'],
+                        default='ours', help='function for building the dataset')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
@@ -138,6 +139,12 @@ def main():
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     # check model type
     logger.info(type(model))
+
+    if args.build_dataset == 'ours':
+        # Use our build_dataset instead of mmdet.datasets.build_dataset
+        from dataset import build_dataset
+    else:
+        from mmdet.datasets import build_dataset
 
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:

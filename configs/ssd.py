@@ -1,5 +1,5 @@
 # models settings
-_base_ = ['_base_/dataset.py']
+_base_ = ['_base_/pascal_voc_12.py']
 input_size = 300
 model = dict(
     type='SingleStageDetector',

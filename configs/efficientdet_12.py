@@ -1,0 +1,1 @@
+_base_ = ['_base_/pascal_voc_12.py', '_base_/efficientdet.py']

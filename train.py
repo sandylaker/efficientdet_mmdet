@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('config', help='train config file path')
     parser.add_argument('--build-dataset',
                         choices=['mmdet', 'ours'],
-                        default='ours', help='function for building the dataset')
+                        default='mmdet', help='function for building the dataset')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')

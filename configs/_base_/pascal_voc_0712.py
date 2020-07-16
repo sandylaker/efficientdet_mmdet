@@ -1,7 +1,7 @@
 dataset_type = 'VOCDataset'
 # Remember to change this root
 data_root = '/home/lfc199471/data/VOCdevkit/'
-img_size = 512  # Modify
+img_size = 640  # Modify
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
@@ -30,14 +30,14 @@ test_pipeline = [
         ])
 ]
 
-batch_size = 24     # Modify
+batch_size = 12     # Modify
 
 data = dict(
     samples_per_gpu=batch_size,
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
-        times=4,
+        times=3,
         dataset=dict(
             type=dataset_type,
             ann_file=[

@@ -1,5 +1,5 @@
 pretrained = '/home/lfc199471/PycharmProjects/efficientdet_mmdet/pretrained/' \
-             'adv-efficientnet-b0-b64d5a18.pth'
+             'efficientnet-b1-f1951068.pth'   # Modify
 
 # EfficientDet-D3
 
@@ -11,7 +11,7 @@ model = dict(
         in_channels=3,
         n_classes=20,
         width_coefficient=1.0,  # Modify
-        depth_coefficient=1.0,  # Modify
+        depth_coefficient=1.1,  # Modify
         se_rate=0.25,
         dropout_rate=0.2,   # Modify
         drop_connect_rate=0.3,
@@ -19,18 +19,18 @@ model = dict(
     neck=dict(
         type='BiFPN',
         in_channels=[40, 112, 320],
-        out_channels=64,   # Modify
+        out_channels=88,   # Modify
         num_outs=5,
         start_level=0,
         end_level=-1,
         norm_cfg=dict(type='BN', momentum=0.01, eps=1e-3),
-        stack=3),   # Modify
+        stack=4),   # Modify
     bbox_head=dict(
         type='RetinaHead',
         num_classes=20,
-        in_channels=64,    # Modify
+        in_channels=88,    # Modify
         stacked_convs=3,    # Modify
-        feat_channels=64,  # Modify
+        feat_channels=88,  # Modify
         norm_cfg=dict(type='BN', momentum=0.01, eps=1e-3),
         anchor_generator=dict(
             type='AnchorGenerator',
@@ -41,7 +41,7 @@ model = dict(
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
-            target_stds=[1.0, 1.0, 2.0, 2.0]),
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -64,12 +64,12 @@ train_cfg = dict(
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
-    score_thr=0.2,
-    nms=dict(type='nms', iou_thr=0.45),
-    max_per_img=200)
+    score_thr=0.05,
+    nms=dict(type='nms', iou_thr=0.5),
+    max_per_img=100)
 
 # optimizer
-optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
@@ -77,9 +77,9 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
-    gamma=0.5,
-    step=[40, 80, 100])
-total_epochs = 120
+    gamma=0.1,
+    step=[3])
+total_epochs = 4
 
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 # yapf:disable

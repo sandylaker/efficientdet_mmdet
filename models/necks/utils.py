@@ -39,3 +39,21 @@ class SeparableConv(nn.Module):
         x = self.depthwise_conv(x, activate=False, norm=False)
         x = self.pointwise_conv(x)
         return x
+
+
+class WeightedAdd(nn.Module):
+    def __init__(self, num_inputs, eps=1e-4):
+        super(WeightedAdd, self).__init__()
+        self.num_inputs = num_inputs
+        self.eps = eps
+        self.relu = nn.ReLU()
+
+        init_val = 1.0 / self.num_inputs
+        self.weights = nn.Parameter(torch.Tensor(2,).fill_(init_val))
+
+    def forward(self, x):
+        assert len(x) == self.num_inputs
+        weights = self.relu(self.weights)
+        x = torch.sum(torch.stack([weights[i] * x[i] for i in range(len(x))], dim=0), dim=0)
+        x /= weights.sum() + self.eps
+        return x

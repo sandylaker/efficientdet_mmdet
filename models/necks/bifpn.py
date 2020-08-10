@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch
 from mmcv.cnn import ConvModule, xavier_init
 from models.necks.utils import SeparableConv
+from models.backbones.efficient_net_utils import Swish
 
 
 class BiFPN(nn.Module):
@@ -32,6 +33,7 @@ class BiFPN(nn.Module):
         self.no_norm_on_lateral = no_norm_on_lateral
         self.upsample_cfg = upsample_cfg
         self.stack = stack
+        self.swish = Swish()
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -62,6 +64,7 @@ class BiFPN(nn.Module):
             out_channels=out_channels,
             kernel_size=1,
             conv_cfg=conv_cfg,
+            act_cfg=act_cfg,
             norm_cfg=norm_cfg)
         self.input_pool_1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.input_pool_2 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -75,7 +78,7 @@ class BiFPN(nn.Module):
                 kernel_size=1,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg if not self.no_norm_on_lateral else None,
-                act_cfg=act_cfg,
+                act_cfg=None,
                 inplace=False)
             self.lateral_convs.append(l_conv)
 
@@ -85,7 +88,7 @@ class BiFPN(nn.Module):
                 levels=self.backbone_end_level - self.start_level,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
+                act_cfg=None,
                 upsample_cfg=upsample_cfg))
 
         # add extra conv layers
@@ -178,6 +181,7 @@ class BiFPNModule(nn.Module):
         self.levels = levels
         self.upsample_cfg = upsample_cfg
         self.bifpn_convs = nn.ModuleList()
+        self.swish = Swish()
 
         self.w1 = nn.Parameter(torch.Tensor(2, levels).fill_(init))
         self.relu1 = nn.ReLU()
@@ -226,7 +230,7 @@ class BiFPNModule(nn.Module):
                 prev_shape = inputs[i-1].shape[2:]
                 interpolated_feat = F.interpolate(pathtd[i], size=prev_shape, **self.upsample_cfg)
             pathtd[i-1] = (w1[0, i-1] * pathtd[i-1] + w1[1, i-1] * interpolated_feat) / norm_factor
-            pathtd[i-1] = self.bifpn_convs[idx_bifpn](pathtd[i-1])
+            pathtd[i-1] = self.bifpn_convs[idx_bifpn](self.swish(pathtd[i-1]))
             idx_bifpn += 1
         # build bottom-up
         for i in range(0, levels - 2, 1):
@@ -236,12 +240,12 @@ class BiFPNModule(nn.Module):
             max_pooled_feat = F.adaptive_max_pool2d(pathtd[i], output_size=next_shape)
             pathtd[i+1] = (w2[0, i] * pathtd[i+1] + w2[1, i] * max_pooled_feat +
                            w2[2, i] * inputs_clone[i+1]) / norm_factor
-            pathtd[i+1] = self.bifpn_convs[idx_bifpn](pathtd[i+1])
+            pathtd[i+1] = self.bifpn_convs[idx_bifpn](self.swish(pathtd[i+1]))
             idx_bifpn += 1
 
         pathtd[levels-1] = (w1[0, levels-1] * pathtd[levels-1] + w1[1, levels-1] * F.max_pool2d(
             pathtd[levels-2], kernel_size=2)) / (w1[0, levels-1] + w1[1, levels-1] + self.eps)
-        pathtd[levels-1] = self.bifpn_convs[idx_bifpn](pathtd[levels-1])
+        pathtd[levels-1] = self.bifpn_convs[idx_bifpn](self.swish(pathtd[levels-1]))
         return pathtd
 
 

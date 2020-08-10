@@ -194,7 +194,7 @@ class EfficientNetBackBone(EfficientNet):
 
 if __name__ == '__main__':
     device = torch.device('cpu')
-    x = torch.randn(4, 3, 512, 512, dtype=torch.float32).to(device)
+    x = torch.randn(1, 3, 512, 512, dtype=torch.float32).to(device)
     model = EfficientNetBackBone(
         in_channels=3,
         n_classes=13,

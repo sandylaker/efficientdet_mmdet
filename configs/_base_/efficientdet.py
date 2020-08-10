@@ -1,7 +1,6 @@
 pretrained = '/home/lfc199471/PycharmProjects/efficientdet_mmdet/pretrained/' \
              'efficientnet-b1-f1951068.pth'   # Modify
 
-# EfficientDet-D3
 
 model = dict(
     type='EfficientDet',
@@ -18,7 +17,7 @@ model = dict(
         frozen_stages=1),  # Modify
     neck=dict(
         type='BiFPN',
-        in_channels=[40, 112, 320],
+        in_channels=[40, 112, 320],  # Modify
         out_channels=88,   # Modify
         num_outs=5,
         start_level=0,
@@ -45,7 +44,7 @@ model = dict(
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
-            gamma=2.0,
+            gamma=1.5,
             alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=1.0)))
@@ -76,10 +75,8 @@ lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    warmup_ratio=0.001,
-    gamma=0.1,
-    step=[3])
-total_epochs = 4
+    warmup_ratio=0.001)
+total_epochs = 12
 
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 # yapf:disable

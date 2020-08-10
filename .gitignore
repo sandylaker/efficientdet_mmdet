@@ -2,6 +2,6 @@
 
 .idea
 __pycache__
-work_dirs
+work_dirs/
 .ipynb_checkpoints
 *.jpg

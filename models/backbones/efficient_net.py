@@ -14,19 +14,30 @@ def init_weights(module: nn.Module):
 
 
 class EfficientNet(nn.Module):
+    # maps scale to coefficients of (width, depth, dropout)
+    param_dict = {
+        0: (1.0, 1.0, 0.2),
+        1: (1.0, 1.1, 0.2),
+        2: (1.1, 1.2, 0.3),
+        3: (1.2, 1.4, 0.3),
+        4: (1.4, 1.8, 0.4),
+        5: (1.6, 2.2, 0.4),
+        6: (1.8, 2.6, 0.5),
+        7: (2.0, 3.1, 0.5),
+    }
+    
     def __init__(self,
-                 in_channels=3,
-                 n_classes=13,
-                 width_coefficient=1.0,
-                 depth_coefficient=1.0,
-                 se_rate=0.25,
-                 dropout_rate=0.2,
-                 drop_connect_rate=0.2,
-                 frozen_stages=-1):
+                 in_channels: int = 3,
+                 n_classes: int = 13,
+                 scale: int = 1,
+                 se_rate: float = 0.25,
+                 drop_connect_rate: float = 0.2,
+                 frozen_stages: int = -1):
         super(EfficientNet, self).__init__()
+        assert scale in range(0, 8)
         self.frozen_stages = frozen_stages
-
         self.in_channels = in_channels
+        width_coefficient, depth_coefficient, dropout_rate = self.param_dict[scale]
         self.width_coefficient = width_coefficient
         self.depth_coefficient = depth_coefficient
         self.divisor = 8
@@ -198,10 +209,8 @@ if __name__ == '__main__':
     model = EfficientNetBackBone(
         in_channels=3,
         n_classes=13,
-        width_coefficient=1.0,
-        depth_coefficient=1.0,
+        scale=7,
         se_rate=0.25,
-        dropout_rate=0.2,
         drop_connect_rate=0.2,
         frozen_stages=7)
     model.to(device)

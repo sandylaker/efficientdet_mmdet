@@ -5,31 +5,24 @@ pretrained = '/home/lfc199471/PycharmProjects/efficientdet_mmdet/pretrained/' \
 model = dict(
     type='EfficientDet',
     pretrained=pretrained,
+    scale=1,    # Modify
     backbone=dict(
         type='EfficientNet',
         in_channels=3,
         n_classes=20,
-        width_coefficient=1.0,  # Modify
-        depth_coefficient=1.1,  # Modify
         se_rate=0.25,
-        dropout_rate=0.2,   # Modify
         drop_connect_rate=0.3,
         frozen_stages=1),  # Modify
     neck=dict(
         type='BiFPN',
-        in_channels=[40, 112, 320],  # Modify
-        out_channels=88,   # Modify
-        num_outs=5,
-        start_level=0,
-        end_level=-1,
         norm_cfg=dict(type='BN', momentum=0.01, eps=1e-3),
-        stack=4),   # Modify
+        act_cfg=None,
+        upsample_cfg=dict(mode='nearest'),
+    ),
     bbox_head=dict(
-        type='RetinaHead',
+        type='RetinaSepBNHead',
         num_classes=20,
-        in_channels=88,    # Modify
-        stacked_convs=3,    # Modify
-        feat_channels=88,  # Modify
+        num_ins=5,
         norm_cfg=dict(type='BN', momentum=0.01, eps=1e-3),
         anchor_generator=dict(
             type='AnchorGenerator',

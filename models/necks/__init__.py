@@ -1,4 +1,4 @@
-from models.necks.bifpn import BiFPN, BiFPNModule
+from models.necks.bifpn import BiFPN, SingleBiFPN
 
 
-__all__ = ['BiFPN', 'BiFPNModule']
+__all__ = ['BiFPN', 'SingleBiFPN']

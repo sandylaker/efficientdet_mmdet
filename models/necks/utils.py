@@ -41,6 +41,11 @@ class SeparableConv(nn.Module):
         return x
 
 
+def reduce_weighted_sum(inputs, weights):
+    inputs = torch.stack([inputs[i] * weights[i] for i in range(len(weights))])
+    return torch.sum(inputs, 0)
+
+
 class WeightedAdd(nn.Module):
     def __init__(self, num_inputs, eps=1e-4):
         super(WeightedAdd, self).__init__()
@@ -54,6 +59,6 @@ class WeightedAdd(nn.Module):
     def forward(self, x):
         assert len(x) == self.num_inputs
         weights = self.relu(self.weights)
-        x = torch.sum(torch.stack([weights[i] * x[i] for i in range(len(x))], dim=0), dim=0)
-        x /= weights.sum() + self.eps
+        weights /= weights.sum() + self.eps
+        x = reduce_weighted_sum(x, weights)
         return x

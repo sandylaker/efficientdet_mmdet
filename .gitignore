@@ -3,5 +3,7 @@
 .idea
 __pycache__
 work_dirs/
+pretrained/
+demo/
 .ipynb_checkpoints
 *.jpg

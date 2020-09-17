@@ -171,6 +171,10 @@ class EfficientNetBackBone(EfficientNet):
     def __init__(self, **kwargs):
         super(EfficientNetBackBone, self).__init__(**kwargs)
 
+    def init_weights(self, pretrained=None):
+        super().init_weights(pretrained)
+        del self.head
+
     def forward(self, x):
         """Extract features.
         Let P denotes the spatial size of input image (assuming the image is square),

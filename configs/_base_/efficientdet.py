@@ -1,5 +1,4 @@
-pretrained = '/home/lfc199471/PycharmProjects/efficientdet_mmdet/pretrained/' \
-             'efficientnet-b1-f1951068.pth'   # Modify
+pretrained = 'pretrained/efficientnet-b1-f1951068.pth'   # Modify
 
 
 model = dict(
@@ -59,29 +58,3 @@ test_cfg = dict(
     score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
-
-# optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.001)
-total_epochs = 12
-
-checkpoint_config = dict(interval=1, max_keep_ckpts=1)
-# yapf:disable
-log_config = dict(
-    interval=50,
-    hooks=[
-        dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
-    ])
-# yapf:enable
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
-load_from = None
-resume_from = None
-workflow = [('train', 1)]

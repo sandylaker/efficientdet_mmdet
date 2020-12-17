@@ -1,6 +1,6 @@
-from models.backbones import EfficientNetBackBone
-from models.detectors import EfficientDet
-from models.necks import BiFPN
+from .backbones import EfficientNetBackBone
+from .detectors import EfficientDet
+from .necks import BiFPN
 from mmdet.models import BACKBONES, NECKS, DETECTORS
 from mmdet.models.builder import build
 

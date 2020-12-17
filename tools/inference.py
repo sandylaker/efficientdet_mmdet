@@ -11,7 +11,7 @@ from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 
 # Use our build_detector instead of mmdet.models.build_detector
-from models import build_detector
+from effdet.models import build_detector
 
 def init_detector(config, checkpoint=None, device='cuda:0'):
     """Initialize a detector from config file.

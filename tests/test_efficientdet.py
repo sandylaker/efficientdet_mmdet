@@ -1,99 +1,47 @@
-from models.builder import BACKBONES, NECKS, build_detector
-from mmdet.models import HEADS
+from effdet.models import BiFPN
+from effdet.models.necks.utils import WeightedAdd
 import torch
-import os.path as osp
-from mmcv.utils import Config
 
 
-def test_backbone_neck_head():
-    from mmcv.utils import build_from_cfg
-    import torch
+def test_neck():
+    bs = 1
+    out_channels = 64
 
-    # EfficientNet-B2, width_coef=1.1, depth_coef=1.2
-    # outputs channels [48, 88, 120, 208, 352],
-    cfg_backbone = dict(type='EfficientNet',
-                        in_channels=3,
-                        n_classes=20,
-                        width_coefficient=1.1,
-                        depth_coefficient=1.2,
-                        se_rate=0.25,
-                        dropout_rate=0.3,
-                        frozen_stages=7)
-    backbone = build_from_cfg(cfg_backbone, BACKBONES)
+    feats = [
+        torch.rand([bs, 40, 128, 128]),
+        torch.rand([bs, 112, 64, 64]),
+        torch.rand([bs, 320, 32, 32])]
 
-    # cfg_neck = dict(
-    #     type='BiFPN',
-    #     in_channels=[40, 80, 112, 192, 320],
-    #     out_channels=112,
-    #     num_outs=5,
-    #     start_level=0,
-    #     end_level=-1,
-    #     stack=5)
-    #
-    # neck = build_from_cfg(cfg_neck, NECKS)
+    neck = BiFPN(
+        in_channels_list=[40, 112, 320],
+        out_channels=64,
+        stack=3)
 
-    images = torch.randn(1, 3, 768, 768)
-    feats = backbone(images)  # noqa
-    # feats = neck(feats)  # noqa
-    for f in feats:
-        print(f.shape)
+    feats = neck(feats)
+    feats_shapes = [f.shape for f in feats]
 
-    from mmdet.models.dense_heads import RetinaHead
-    # cfg_head = dict(
-    #     type='RetinaHead',
-    #     num_classes=20,
-    #     in_channels=112,
-    #     stacked_convs=3,
-    #     feat_channels=112,
-    #     anchor_generator=dict(
-    #         type='AnchorGenerator',
-    #         octave_base_scale=4,
-    #         scales_per_octave=3,
-    #         ratios=[0.5, 1.0, 2.0],
-    #         strides=[8, 16, 32, 64, 128]),
-    #     bbox_coder=dict(
-    #         type='DeltaXYWHBBoxCoder',
-    #         target_means=[.0, .0, .0, .0],
-    #         target_stds=[1.0, 1.0, 1.0, 1.0]),
-    #     loss_cls=dict(
-    #         type='FocalLoss',
-    #         use_sigmoid=True,
-    #         gamma=2.0,
-    #         alpha=0.25,
-    #         loss_weight=1.0),
-    #     loss_bbox=dict(type='L1Loss', loss_weight=1.0))
-    #
-    # head = build_from_cfg(cfg_head, HEADS)
-    #
-    # cls_scores, bbox_preds = head(feats)  # noqa
+    truth_shapes = [(bs, out_channels, 128, 128),
+                    (bs, out_channels, 64, 64),
+                    (bs, out_channels, 32, 32),
+                    (bs, out_channels, 16, 16),
+                    (bs, out_channels, 8, 8)]
+    assert all([fs == ts for fs, ts in zip(feats_shapes, truth_shapes)])
+    
 
+class TestWAdd:
+    def test_shape(self):
+        wadd = WeightedAdd(num_inputs=2)
+        x = [torch.rand(1, 64, 16, 16), torch.rand(1, 64, 16, 16)]
+        output = wadd(x)
+        assert output.shape == (1, 64, 16, 16)
 
-def test_build_detector():
-    ROOT = osp.dirname(osp.dirname(__file__))
-    cfg = Config.fromfile(osp.join(ROOT, 'configs/efficientdet.py'))
+    def test_output_and_weight(self):
+        wadd = WeightedAdd(num_inputs=3, eps=1e-8)
+        x = [torch.rand(1, 64, 16, 16) * i for i in range(1, 4)]
+        with torch.no_grad():
+            output = wadd(x)
+        truth_output = torch.cat(x, dim=0).mean(dim=0)
 
-    device = torch.device('cuda')
-    model = build_detector(cfg.model, cfg.train_cfg, cfg.test_cfg).to(device)
-
-    img = torch.randn(1, 3, 224, 224).to(device)
-    gt_bboxes = [torch.tensor([[20.0, 20.0, 50.0, 50.0],
-                               [70.0, 70.0, 150.0, 150.0]]).to(device)]
-    gt_labels = [torch.tensor([1, 2]).to(device)]
-    img_metas = [dict(img_shape=(224, 224),
-                      ori_shape=(224, 224),
-                      pad_shape=(224, 224),
-                      img_norm_cfg=dict(
-                          mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True),
-                      scale_factor=1.0)]
-    losses = model(img, img_metas, gt_bboxes=gt_bboxes, gt_labels=gt_labels)
-    print(type(losses))
-    for key, loss in losses.items():
-        if isinstance(loss, torch.Tensor):
-            print(key, loss.shape)
-        else:
-            print(key, loss)
-
-
-if __name__ == '__main__':
-    test_backbone_neck_head()
-    # test_build_detector()
+        assert torch.allclose(output, truth_output, atol=1e-3), \
+            f"difference: {torch.abs(output - truth_output).sum()}"
+        assert torch.allclose(wadd.weights, torch.full((3,), 1 / 3))

@@ -1,9 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
 from mmcv.cnn import ConvModule, xavier_init
-from models.necks.utils import SeparableConv, WeightedAdd
-from models.backbones.efficient_net_utils import Swish
+from .utils import WeightedAdd, DepthwiseSeparableConvModule
+from ..backbones.efficient_net_utils import Swish
 from functools import partial
 
 
@@ -12,13 +11,12 @@ class BiFPN(nn.Module):
                  in_channels_list: list,
                  out_channels:int,
                  stack: int,
-                 conv_cfg: dict = None,
                  norm_cfg: dict = dict(type='BN', momentum=0.01, eps=1e-3),
-                 act_cfg: dict = None,
                  upsample_cfg: dict = dict(mode='nearest')):
         super(BiFPN, self).__init__()
         assert isinstance(in_channels_list, list)
-        assert len(in_channels_list) == 3
+        assert len(in_channels_list) == 3, f"Length of input feature maps list should be 3, " \
+                                           f"got {len(in_channels_list)}"
 
         self.in_channels_list = in_channels_list
         self.out_channels = out_channels
@@ -34,12 +32,8 @@ class BiFPN(nn.Module):
                     stack_idx=i,
                     # in_channels_list is only useful for stack_idx = 0
                     in_channels_list=self.in_channels_list,
-                    conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
-                    act_cfg=act_cfg,
-                    upsample_cfg=upsample_cfg,
-                )
-            )
+                    upsample_cfg=upsample_cfg))
         self.init_weights()
 
     def init_weights(self):
@@ -58,16 +52,12 @@ class SingleBiFPN(nn.Module):
                  out_channels: int,
                  stack_idx: int,
                  in_channels_list: list = None,
-                 conv_cfg: dict = None,
                  norm_cfg: dict = None,
-                 act_cfg: dict = None,
                  upsample_cfg: dict = dict(mode='nearest'),
                  eps:float = 1e-4):
         super(SingleBiFPN, self).__init__()
 
         self.out_channels = out_channels
-        self.conv_cfg = conv_cfg
-        self.act_cfg = act_cfg
         self.norm_cfg = norm_cfg
         self.eps = eps
         self.stack_idx = stack_idx
@@ -76,7 +66,7 @@ class SingleBiFPN(nn.Module):
         self.upsample_func = partial(F.interpolate, scale_factor=2, **self.upsample_cfg)
         self.downsample_func = partial(F.max_pool2d, kernel_size=3, stride=2, padding=1)
 
-        # build layers
+        # build layers, only build conv modules for input when stack index is 0
         if self.stack_idx == 0:
             self.in_channels_list = in_channels_list
             self._build_in_conv_layers()
@@ -90,9 +80,13 @@ class SingleBiFPN(nn.Module):
                          'conv_p5_in_2', 'conv_p6_in')
         self.in_convs = nn.ModuleDict()
         for name, in_channels in zip(in_conv_names, in_conv_channels_list):
-            conv_module = ConvModule(in_channels, self.out_channels, kernel_size=1,
-                                     conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg,
-                                     act_cfg=self.act_cfg)
+            # no built-in activation, the output will be manually activated by swish
+            conv_module = ConvModule(
+                in_channels,
+                self.out_channels,
+                kernel_size=1,
+                norm_cfg=self.norm_cfg,
+                act_cfg=None)
             self.in_convs.update({name: conv_module})
 
     def _build_td_bu_layers(self):
@@ -117,18 +111,32 @@ class SingleBiFPN(nn.Module):
         conv_names_td = ('conv_p6_td', 'conv_p5_td', 'conv_p4_td', 'conv_p3_td')
         self.conv_td = nn.ModuleDict()
         for name_td in conv_names_td:
-            conv_module = SeparableConv(self.out_channels, self.out_channels,
-                                        conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg,
-                                        act_cfg=self.act_cfg)
+            # no built-in activation, the output will be manually activated by swish
+            conv_module = DepthwiseSeparableConvModule(
+                self.out_channels,
+                self.out_channels,
+                kernel_size=3,
+                padding=1,
+                dw_norm_cfg=None,
+                dw_act_cfg=None,
+                pw_norm_cfg=self.norm_cfg,
+                pw_act_cfg=None)
             self.conv_td.update({name_td: conv_module})
 
         # Names of depthwise separable convs in bottom up path
         conv_names_bu = ('conv_p4_bu', 'conv_p5_bu', 'conv_p6_bu', 'conv_p7_bu')
         self.conv_bu = nn.ModuleDict()
         for name_bu in conv_names_bu:
-            conv_module = SeparableConv(self.out_channels, self.out_channels,
-                                        conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg,
-                                        act_cfg=self.act_cfg)
+            # no built-in activation, the output will be manually activated by swish
+            conv_module = DepthwiseSeparableConvModule(
+                self.out_channels,
+                self.out_channels,
+                kernel_size=3,
+                padding=1,
+                dw_norm_cfg=None,
+                dw_act_cfg=None,
+                pw_norm_cfg=self.norm_cfg,
+                pw_act_cfg=None)
             self.conv_bu.update({name_bu: conv_module})
 
     def forward(self, feats):
@@ -195,21 +203,4 @@ class SingleBiFPN(nn.Module):
         p7_bu = self.swish(p7_bu)
         p7_bu = self.conv_bu['conv_p7_bu'](p7_bu)
 
-        # TODO Check if return td or bu of p4, p5, p6
         return p3_td, p4_bu, p5_bu, p6_bu, p7_bu
-
-
-if __name__ == '__main__':
-    feats = [
-        torch.rand([4, 40, 128, 128]),
-        torch.rand([4, 112, 64, 64]),
-        torch.rand([4, 320, 32, 32])
-    ]
-    neck = BiFPN(
-        in_channels_list=[40, 112, 320],
-        out_channels=64,
-        stack=3,
-        )
-    feats = neck(feats)
-    for f in feats:
-        print(f.shape)

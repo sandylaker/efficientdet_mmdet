@@ -30,7 +30,7 @@ test_pipeline = [
         ])
 ]
 
-batch_size = 12     # Modify
+batch_size = 16     # Modify
 
 data = dict(
     samples_per_gpu=batch_size,

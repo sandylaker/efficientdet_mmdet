@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
+from copy import deepcopy
 
 
 class DepthwiseSeparableConvModule(nn.Module):
@@ -63,6 +64,8 @@ class DepthwiseSeparableConvModule(nn.Module):
         pw_norm_cfg = pw_norm_cfg if pw_norm_cfg != 'default' else norm_cfg
         pw_act_cfg = pw_act_cfg if pw_act_cfg != 'default' else act_cfg
 
+        dw_kwargs = deepcopy(kwargs)
+        dw_kwargs.update({'bias': False})
         # depthwise convolution
         self.depthwise_conv = ConvModule(
             in_channels,
@@ -74,8 +77,7 @@ class DepthwiseSeparableConvModule(nn.Module):
             groups=in_channels,
             norm_cfg=dw_norm_cfg,
             act_cfg=dw_act_cfg,
-            bias=False,
-            **kwargs)
+            **dw_kwargs)
 
         self.pointwise_conv = ConvModule(
             in_channels,

@@ -7,6 +7,7 @@ from mmdet.models import AnchorHead
 class EfficientHead(AnchorHead):
     def __init__(self,
                  num_classes,
+                 num_ins,
                  in_channels,
                  feat_channels,
                  stacked_convs=4,
@@ -22,6 +23,7 @@ class EfficientHead(AnchorHead):
         self.stacked_convs = stacked_convs
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
+        self.num_ins = num_ins
         super(EfficientHead, self).__init__(
             num_classes=num_classes,
             in_channels=in_channels,
@@ -32,33 +34,43 @@ class EfficientHead(AnchorHead):
     def _init_layers(self):
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
+
+        for j in range(self.num_ins):
+            cls_convs = nn.ModuleList()
+            reg_convs = nn.ModuleList()
+            for i in range(self.stacked_convs):
+                chn = self.in_channels if i == 0 else self.feat_channels
+                cls_convs.append(
+                    DepthwiseSeparableConvModule(
+                        chn,
+                        self.feat_channels,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        dw_norm_cfg=None,
+                        dw_act_cfg=None,
+                        pw_norm_cfg=self.norm_cfg,
+                        pw_act_cfg=self.act_cfg))
+                reg_convs.append(
+                    DepthwiseSeparableConvModule(
+                        chn,
+                        self.feat_channels,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        dw_norm_cfg=None,
+                        dw_act_cfg=None,
+                        pw_norm_cfg=self.norm_cfg,
+                        pw_act_cfg=self.act_cfg))
+            self.cls_convs.append(cls_convs)
+            self.reg_convs.append(reg_convs)
         for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
-            # separate normalization layers are applied to cls and reg branches
-            self.cls_convs.append(
-                nn.Sequential(
-                    DepthwiseSeparableConvModule(
-                        chn,
-                        self.feat_channels,
-                        kernel_size=3,
-                        stride=1,
-                        padding=1,
-                        dw_norm_cfg=None,
-                        dw_act_cfg=None,
-                        pw_norm_cfg=self.norm_cfg,
-                        pw_act_cfg=self.act_cfg)))
-            self.reg_convs.append(
-                nn.Sequential(
-                    DepthwiseSeparableConvModule(
-                        chn,
-                        self.feat_channels,
-                        kernel_size=3,
-                        stride=1,
-                        padding=1,
-                        dw_norm_cfg=None,
-                        dw_act_cfg=None,
-                        pw_norm_cfg=self.norm_cfg,
-                        pw_act_cfg=self.act_cfg)))
+            for j in range(1, self.num_ins):
+                self.cls_convs[j][i].depthwise_conv.conv = self.cls_convs[0][i].depthwise_conv.conv
+                self.cls_convs[j][i].pointwise_conv.conv = self.cls_convs[0][i].pointwise_conv.conv
+
+                self.reg_convs[j][i].depthwise_conv.conv = self.reg_convs[0][i].depthwise_conv.conv
+                self.reg_convs[j][i].pointwise_conv.conv = self.reg_convs[0][i].pointwise_conv.conv
         # no activation and normalization applied to the last layer
         # apply bias to the last layer
         self.efficient_cls = DepthwiseSeparableConvModule(
@@ -83,29 +95,21 @@ class EfficientHead(AnchorHead):
             bias=True)
 
     def init_weights(self):
-        for m in self.cls_convs:
-            ds_conv = m[0]
-            normal_init(ds_conv.depthwise_conv.conv, std=0.01)
-            normal_init(ds_conv.pointwise_conv.conv, std=0.01)
-        for m in self.reg_convs:
-            ds_conv = m[0]
-            normal_init(ds_conv.depthwise_conv.conv, std=0.01)
-            normal_init(ds_conv.pointwise_conv.conv, std=0.01)
-
         bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.efficient_cls.depthwise_conv.conv, std=0.01)
         normal_init(self.efficient_cls.pointwise_conv.conv, std=0.01, bias=bias_cls)
 
-        normal_init(self.efficient_reg.depthwise_conv.conv, std=0.01)
-        normal_init(self.efficient_reg.pointwise_conv.conv, std=0.01)
-
-    def forward_single(self, x):
-        cls_feat = x
-        reg_feat = x
-        for cls_conv in self.cls_convs:
-            cls_feat = cls_conv(cls_feat)
-        for reg_conv in self.reg_convs:
-            reg_feat = reg_conv(reg_feat)
-        cls_score = self.efficient_cls(cls_feat)
-        bbox_pred = self.efficient_reg(reg_feat)
-        return cls_score, bbox_pred
+    def forward(self, feats):
+        cls_scores = []
+        bbox_preds = []
+        for i, x in enumerate(feats):
+            cls_feat = feats[i]
+            reg_feat = feats[i]
+            for cls_conv in self.cls_convs[i]:
+                cls_feat = cls_conv(cls_feat)
+            for reg_conv in self.reg_convs[i]:
+                reg_feat = reg_conv(reg_feat)
+            cls_score = self.efficient_cls(cls_feat)
+            bbox_pred = self.efficient_reg(reg_feat)
+            cls_scores.append(cls_score)
+            bbox_preds.append(bbox_pred)
+        return cls_scores, bbox_preds

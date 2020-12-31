@@ -83,8 +83,9 @@ venv.bak/
 
 # Cython debug symbols
 cython_debug/
+.idea/
 
-work_dirs/
+workdirs/
 data/
 pretrained/
 demo/

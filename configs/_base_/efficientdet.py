@@ -1,4 +1,4 @@
-pretrained = 'pretrained/efficientnet-b1-f1951068.pth'   # Modify
+pretrained = 'pretrained/tf_efficientnet_b1_ns-99dd0c41.pth'   # Modify
 
 
 model = dict(
@@ -11,13 +11,11 @@ model = dict(
         n_classes=20,
         se_rate=0.25,
         drop_connect_rate=0.3,
-        frozen_stages=1),  # Modify
+        frozen_stages=-1),  # Modify
     neck=dict(
         type='BiFPN',
         norm_cfg=dict(type='BN', momentum=0.01, eps=1e-3),
-        act_cfg=None,
-        upsample_cfg=dict(mode='nearest'),
-    ),
+        upsample_cfg=dict(mode='nearest')),
     bbox_head=dict(
         type='RetinaSepBNHead',
         num_classes=20,

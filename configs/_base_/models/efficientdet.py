@@ -17,7 +17,7 @@ model = dict(
         norm_cfg=dict(type='BN', momentum=0.01, eps=1e-3),
         upsample_cfg=dict(mode='nearest')),
     bbox_head=dict(
-        type='RetinaSepBNHead',
+        type='EfficientHead',
         num_classes=20,
         num_ins=5,
         norm_cfg=dict(type='BN', momentum=0.01, eps=1e-3),

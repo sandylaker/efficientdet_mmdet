@@ -1,5 +1,5 @@
-from effdet.models import BiFPN
-from effdet.models.necks.utils import WeightedAdd
+from effdet_mmdet.models import BiFPN
+from effdet_mmdet.models.necks.utils import WeightedAdd
 import torch
 
 

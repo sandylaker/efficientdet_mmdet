@@ -16,7 +16,7 @@ from mmdet.apis import set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 
 # Use our build_detector instead of mmdet.models.build_detector
-from effdet.models import build_detector
+from effdet_mmdet.models import build_detector
 
 from mmdet.utils import collect_env, get_root_logger
 

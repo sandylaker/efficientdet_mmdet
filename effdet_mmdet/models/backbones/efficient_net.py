@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from effdet.models.backbones.efficient_net_utils import MBConv, Flatten, Swish
+from effdet_mmdet.models.backbones.efficient_net_utils import MBConv, Flatten, Swish
 from collections import OrderedDict
 import math
 

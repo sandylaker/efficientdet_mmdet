@@ -11,7 +11,7 @@ lr_config = dict(
     warmup_ratio=0.001,
     min_lr=1e-5)
 # actual epochs are multiplied by 3
-total_epochs = 50
+runner = dict(type='EpochBasedRunner', max_epochs=50)
 
 checkpoint_config = dict(interval=1, max_keep_ckpts=2)
 # yapf:disable

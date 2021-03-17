@@ -36,8 +36,8 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=14,
-    workers_per_gpu=4,
+    samples_per_gpu=18,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',

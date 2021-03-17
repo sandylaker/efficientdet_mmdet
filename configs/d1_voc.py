@@ -1,7 +1,7 @@
 _base_ = ['_base_/datasets/pascal_voc_0712.py', '_base_/models/efficientdet.py']
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=1e-4)
+optimizer = dict(type='SGD', lr=0.06, momentum=0.9, weight_decay=1e-4)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(

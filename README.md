@@ -8,4 +8,4 @@ we do not modify the mmdetection code in place.
 ## Benchmarks on PascalVOC07+12
 Model | mAP |
 :---:|:---:|
-D1 | 0.835|
+D1 | 0.839|

@@ -86,7 +86,7 @@ cython_debug/
 .idea/
 
 workdirs/
-data/
-pretrained/
+data
+pretrained
 demo/
 scripts/

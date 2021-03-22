@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from effdet_mmdet.models.backbones.efficient_net_utils import MBConv, Flatten, Swish
+from .efficient_net_utils import MBConv, Flatten
+from mmcv.cnn import ConvModule
 from collections import OrderedDict
 import math
 
@@ -32,7 +33,9 @@ class EfficientNet(nn.Module):
                  scale: int = 1,
                  se_rate: float = 0.25,
                  drop_connect_rate: float = 0.2,
-                 frozen_stages: int = -1):
+                 frozen_stages: int = -1,
+                 norm_cfg=dict(type='SyncBN', momentum=0.01, eps=1e-3),
+                 act_cfg=dict(type='Swish')):
         super(EfficientNet, self).__init__()
         assert scale in range(0, 8)
         self.frozen_stages = frozen_stages
@@ -56,12 +59,21 @@ class EfficientNet(nn.Module):
         kernel_sizes = [3, 3, 5, 3, 5, 5, 3]
 
         # Define stem
-        self.stem = nn.Sequential(
-            nn.Conv2d(self.in_channels, self.list_channels[0], kernel_size=3, stride=2, padding=1,
-                      bias=False),
-            nn.BatchNorm2d(self.list_channels[0], momentum=0.01, eps=1e-3),
-            Swish()
-        )
+        # self.stem = nn.Sequential(
+        #     nn.Conv2d(self.in_channels, self.list_channels[0], kernel_size=3, stride=2, padding=1,
+        #               bias=False),
+        #     nn.BatchNorm2d(self.list_channels[0], momentum=0.01, eps=1e-3),
+        #     Swish()
+        # )
+        self.stem = ConvModule(
+            in_channels=self.in_channels,
+            out_channels=self.list_channels[0],
+            kernel_size=3,
+            stride=2,
+            padding=1,
+            bias=False,
+            norm_cfg=norm_cfg,
+            act_cfg=act_cfg)
 
         # Define blocks
         blocks = []
@@ -80,29 +92,42 @@ class EfficientNet(nn.Module):
             name = 'MBConv{}_{}'.format(expand_rate, counter)
             blocks.append((
                 name,
-                MBConv(num_channels, next_num_channels, kernel_size=kernel_size,
-                       stride=stride, expand_rate=expand_rate, se_rate=se_rate,
-                       drop_connect_rate=drop_rate)
-            ))
+                MBConv(num_channels,
+                       next_num_channels,
+                       kernel_size=kernel_size,
+                       stride=stride,
+                       expand_rate=expand_rate,
+                       se_rate=se_rate,
+                       drop_connect_rate=drop_rate,
+                       norm_cfg=norm_cfg,
+                       act_cfg=act_cfg)))
             counter += 1
             for i in range(1, num_repeats):
                 name = 'MBConv{}_{}'.format(expand_rate, counter)
                 drop_rate = drop_connect_rate * counter / num_blocks
                 blocks.append((
                     name,
-                    MBConv(next_num_channels, next_num_channels, kernel_size=kernel_size,
-                           stride=1, expand_rate=expand_rate, se_rate=se_rate,
-                           drop_connect_rate=drop_rate)
-                ))
+                    MBConv(next_num_channels,
+                           next_num_channels,
+                           kernel_size=kernel_size,
+                           stride=1,
+                           expand_rate=expand_rate,
+                           se_rate=se_rate,
+                           drop_connect_rate=drop_rate,
+                           norm_cfg=norm_cfg,
+                           act_cfg=act_cfg)))
                 counter += 1
 
         self.blocks = nn.Sequential(OrderedDict(blocks))
 
         # Define head
         self.head = nn.Sequential(
-            nn.Conv2d(self.list_channels[-2], self.list_channels[-1], kernel_size=1, bias=False),
-            nn.BatchNorm2d(self.list_channels[-1], momentum=0.01, eps=1e-3),
-            Swish(),
+            ConvModule(self.list_channels[-2],
+                       self.list_channels[-1],
+                       kernel_size=1,
+                       bias=False,
+                       norm_cfg=norm_cfg,
+                       act_cfg=act_cfg),
             nn.AdaptiveAvgPool2d(1),
             Flatten(),
             nn.Dropout(p=dropout_rate),
@@ -158,7 +183,7 @@ def load_checkpoint(model: EfficientNet, pretrained:str):
 
     mapping = {k: v for k, v in zip(model_state.keys(), model.state_dict().keys())}
     mapped_model_state = OrderedDict([
-        (mapping[k], v) for k, v in model_state.items() if not mapping[k].startswith('head.6')
+        (mapping[k], v) for k, v in model_state.items() if not mapping[k].startswith('head.4')
     ])
     imcompatible_keys = model.load_state_dict(mapped_model_state, strict=False)
     print('Loaded ImageNet weights for EfficientNet')
@@ -205,22 +230,6 @@ class EfficientNetBackBone(EfficientNet):
                 stage_index += 1
                 feats.append(x)
         return [feats[i] for i in self.out_indices]
-
-
-if __name__ == '__main__':
-    device = torch.device('cpu')
-    x = torch.randn(1, 3, 512, 512, dtype=torch.float32).to(device)
-    model = EfficientNetBackBone(
-        in_channels=3,
-        n_classes=13,
-        scale=7,
-        se_rate=0.25,
-        drop_connect_rate=0.2,
-        frozen_stages=7)
-    model.to(device)
-    feats = model(x)
-    for f in feats:
-        print(f.shape)
 
 
 

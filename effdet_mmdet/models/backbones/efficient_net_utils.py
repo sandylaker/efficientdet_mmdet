@@ -1,13 +1,6 @@
 import torch
 import torch.nn as nn
-
-
-class Swish(nn.Module):
-    def __init__(self):
-        super(Swish, self).__init__()
-
-    def forward(self, x):
-        return x * torch.sigmoid(x)
+from mmcv.cnn import ConvModule, Swish
 
 
 class Flatten(nn.Module):
@@ -42,7 +35,9 @@ class MBConv(nn.Module):
                  stride: int,
                  expand_rate: float = 1.0,
                  se_rate: float = 0.25,
-                 drop_connect_rate: float = 0.2):
+                 drop_connect_rate: float = 0.2,
+                 norm_cfg=dict(type='SyncBN', momentum=0.01, eps=1e-3),
+                 act_cfg=dict(type='Swish')):
         super(MBConv, self).__init__()
 
         expand_planes = int(in_planes * expand_rate)
@@ -50,26 +45,39 @@ class MBConv(nn.Module):
 
         self.expansion_conv = None
         if expand_rate > 1.0:
-            self.expansion_conv = nn.Sequential(
-                nn.Conv2d(in_planes, expand_planes, kernel_size=1, stride=1, padding=0, bias=False),
-                nn.BatchNorm2d(expand_planes, momentum=0.01, eps=1e-3),
-                Swish()
-            )
+            self.expansion_conv = ConvModule(
+                in_channels=in_planes,
+                out_channels=expand_planes,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=False,
+                norm_cfg=norm_cfg,
+                act_cfg=act_cfg)
             in_planes = expand_planes
 
-        self.depthwise_conv = nn.Sequential(
-            nn.Conv2d(in_planes, expand_planes, kernel_size=kernel_size,
-                      stride=stride, padding=kernel_size//2, groups=expand_planes, bias=False),
-            nn.BatchNorm2d(expand_planes, momentum=0.01, eps=1e-3),
-            Swish()
-        )
+        self.depthwise_conv = ConvModule(
+            in_channels=in_planes,
+            out_channels=expand_planes,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=kernel_size // 2,
+            groups=expand_planes,
+            bias=False,
+            norm_cfg=norm_cfg,
+            act_cfg=act_cfg)
 
         self.squeeze_excitation = SqueezeExcitation(expand_planes, se_planes)
 
-        self.project_conv = nn.Sequential(
-            nn.Conv2d(expand_planes, planes, kernel_size=1, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(planes, momentum=0.01, eps=1e-3)
-        )
+        self.project_conv = ConvModule(
+            in_channels=expand_planes,
+            out_channels=planes,
+            kernel_size=1,
+            stride=1,
+            padding=1,
+            bias=False,
+            norm_cfg=norm_cfg,
+            act_cfg=None)   # noqa
 
         self.with_skip = stride == 1
         self.drop_connect_rate = torch.tensor(drop_connect_rate, requires_grad=False)

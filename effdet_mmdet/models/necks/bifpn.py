@@ -1,8 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn import ConvModule, xavier_init, Swish
 from .utils import WeightedAdd, DepthwiseSeparableConvModule
-from ..backbones.efficient_net_utils import Swish
 from functools import partial
 
 
@@ -54,7 +53,7 @@ class SingleBiFPN(nn.Module):
                  in_channels_list: list = None,
                  norm_cfg: dict = None,
                  upsample_cfg: dict = dict(mode='nearest'),
-                 eps:float = 1e-4):
+                 eps: float = 1e-4):
         super(SingleBiFPN, self).__init__()
 
         self.out_channels = out_channels

@@ -74,7 +74,7 @@ class MBConv(nn.Module):
             out_channels=planes,
             kernel_size=1,
             stride=1,
-            padding=1,
+            padding=0,
             bias=False,
             norm_cfg=norm_cfg,
             act_cfg=None)   # noqa

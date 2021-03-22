@@ -59,12 +59,6 @@ class EfficientNet(nn.Module):
         kernel_sizes = [3, 3, 5, 3, 5, 5, 3]
 
         # Define stem
-        # self.stem = nn.Sequential(
-        #     nn.Conv2d(self.in_channels, self.list_channels[0], kernel_size=3, stride=2, padding=1,
-        #               bias=False),
-        #     nn.BatchNorm2d(self.list_channels[0], momentum=0.01, eps=1e-3),
-        #     Swish()
-        # )
         self.stem = ConvModule(
             in_channels=self.in_channels,
             out_channels=self.list_channels[0],
@@ -230,7 +224,3 @@ class EfficientNetBackBone(EfficientNet):
                 stage_index += 1
                 feats.append(x)
         return [feats[i] for i in self.out_indices]
-
-
-
-

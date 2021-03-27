@@ -10,7 +10,7 @@ model = dict(
         in_channels=3,
         n_classes=20,
         se_rate=0.25,
-        drop_connect_rate=0.3,
+        drop_connect_rate=0.2,
         frozen_stages=-1,   # Modify
         norm_cfg=norm_cfg),
     neck=dict(
@@ -38,9 +38,10 @@ model = dict(
             gamma=1.5,
             alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss',
-                       loss_weight=1.0,
-                       beta=1/9))
+        loss_bbox=dict(
+            type='SmoothL1Loss', 
+            loss_weight=1.0,
+            beta=1/9))
 )
 
 # training and testing settings
@@ -58,5 +59,5 @@ test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.05,
-    nms=dict(type='soft_nms', iou_threshold=0.5),
+    nms=dict(type='nms', iou_threshold=0.5),
     max_per_img=100)

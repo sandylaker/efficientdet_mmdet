@@ -14,8 +14,9 @@ optimizer_config = dict(grad_clip=None)
 lr_config = dict(
     policy='CosineAnnealing',
     warmup='linear',
-    warmup_iters=1000,
+    warmup_iters=5,
     warmup_ratio=0.001,
+    warmup_by_epoch=True,
     min_lr=1e-5)
 
 runner = dict(type='EpochBasedRunner', max_epochs=300)
@@ -35,5 +36,5 @@ resume_from = None
 workflow = [('train', 1)]
 
 custom_hooks = [
-    dict(type='EMAHook', momentum=0.0002, interval=1, warm_up=1000),
+    dict(type='EMAHook', momentum=0.0002, interval=1, warm_up=4000),
 ]

@@ -8,9 +8,8 @@ model = dict(
     backbone=dict(
         type='EfficientNet',
         in_channels=3,
-        n_classes=20,
+        n_classes=1000,
         se_rate=0.25,
-        drop_connect_rate=0.2,
         frozen_stages=-1,   # Modify
         norm_cfg=norm_cfg),
     neck=dict(
@@ -39,9 +38,8 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(
-            type='SmoothL1Loss', 
-            loss_weight=1.0,
-            beta=1/9))
+            type='L1Loss', 
+            loss_weight=1.0))
 )
 
 # training and testing settings

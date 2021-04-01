@@ -65,7 +65,7 @@ model = dict(
 )
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=4e-5)
+optimizer = dict(type='SGD', lr=0.18, momentum=0.9, weight_decay=4e-5)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(

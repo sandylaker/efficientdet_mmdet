@@ -38,7 +38,7 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(
-            type='L1Loss', 
+            type='L1Loss',
             loss_weight=1.0))
 )
 

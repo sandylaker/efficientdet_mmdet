@@ -65,7 +65,7 @@ model = dict(
 )
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.18, momentum=0.9, weight_decay=4e-5)
+optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=4e-5)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
@@ -75,7 +75,7 @@ lr_config = dict(
     warmup_ratio=0.001,
     warmup_by_epoch=True,
     min_lr=1e-5)
-# actual epochs are multiplied by 3
+
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 
 checkpoint_config = dict(interval=1, max_keep_ckpts=2)

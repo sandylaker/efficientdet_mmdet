@@ -1,9 +1,10 @@
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob, normal_init
 from ..necks import DepthwiseSeparableConvModule
-from mmdet.models import AnchorHead
+from mmdet.models import AnchorHead, HEADS
 
 
+@HEADS.register_module()
 class EfficientHead(AnchorHead):
     def __init__(self,
                  num_classes,

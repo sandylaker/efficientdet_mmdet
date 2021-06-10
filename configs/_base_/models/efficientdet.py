@@ -1,3 +1,9 @@
+custom_imports = dict(imports=['effdet_mmdet.models.backbones',
+                               'effdet_mmdet.models.necks',
+                               'effdet_mmdet.models.heads',
+                               'effdet_mmdet.models.detectors'],
+                      allow_failed_imports=False)
+
 pretrained = 'pretrained/tf_efficientnet_b1_ns-99dd0c41.pth'   # Modify
 
 norm_cfg = dict(type='SyncBN', momentum=0.01, eps=1e-3)  # Modify

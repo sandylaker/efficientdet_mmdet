@@ -4,6 +4,7 @@ from .efficient_net_utils import MBConv, Flatten
 from mmcv.cnn import ConvModule
 from collections import OrderedDict
 import math
+from mmdet.models import BACKBONES
 
 
 def init_weights(module: nn.Module):
@@ -184,6 +185,7 @@ def load_checkpoint(model: EfficientNet, pretrained:str):
     print('Imcompatible keys:', imcompatible_keys)
 
 
+@BACKBONES.register_module()
 class EfficientNetBackBone(EfficientNet):
     out_indices = (2, 4, 6)
 

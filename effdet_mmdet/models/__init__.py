@@ -1,5 +1,7 @@
-from .backbones import *
-from .necks import *
-from .detectors import *
+from .backbones import EfficientNetBackBone
+from .necks import BiFPN
+from .detectors import EfficientDet
 from .heads import EfficientHead
-from .builder import build_detector, BACKBONES, NECKS, DETECTORS
+
+
+__all__ = ['EfficientDet', 'EfficientHead', 'EfficientNetBackBone', 'BiFPN']

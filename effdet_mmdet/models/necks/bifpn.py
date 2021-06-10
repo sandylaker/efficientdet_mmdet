@@ -3,8 +3,10 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init, Swish
 from .utils import WeightedAdd, DepthwiseSeparableConvModule
 from functools import partial
+from mmdet.models import NECKS
 
 
+@NECKS.register_module()
 class BiFPN(nn.Module):
     def __init__(self,
                  in_channels_list: list,

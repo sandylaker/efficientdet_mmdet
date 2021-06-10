@@ -1,6 +1,7 @@
-from mmdet.models import SingleStageDetector
+from mmdet.models import SingleStageDetector, DETECTORS
 
 
+@DETECTORS.register_module()
 class EfficientDet(SingleStageDetector):
     # maps scale to architecture settings
     # (Width, Depth, Depth of bbox/class head, input channels list of BiFPN)

@@ -38,8 +38,8 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=2,
+    samples_per_gpu=10,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
@@ -75,6 +75,8 @@ lr_config = dict(
     warmup_ratio=0.001,
     warmup_by_epoch=True,
     min_lr=1e-5)
+# fp16
+fp16 = dict(loss_scale=512.)
 
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 

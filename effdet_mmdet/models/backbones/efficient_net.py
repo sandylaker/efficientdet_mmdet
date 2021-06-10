@@ -36,7 +36,8 @@ class EfficientNet(nn.Module):
                  drop_connect_rate: float = 0.2,
                  frozen_stages: int = -1,
                  norm_cfg=dict(type='SyncBN', momentum=0.01, eps=1e-3),
-                 act_cfg=dict(type='Swish')):
+                 act_cfg=dict(type='Swish'),
+                 pretrained=None):
         super(EfficientNet, self).__init__()
         assert scale in range(0, 8)
         self.frozen_stages = frozen_stages
@@ -46,6 +47,7 @@ class EfficientNet(nn.Module):
         self.depth_coefficient = depth_coefficient
         self.divisor = 8
         self.n_classes = n_classes
+        self.pretrained = pretrained
 
         list_channels = [32, 16, 24, 40, 80, 112, 192, 320, 1280]
         list_channels = [self._setup_channels(c) for c in list_channels]
@@ -129,6 +131,7 @@ class EfficientNet(nn.Module):
             nn.Linear(self.list_channels[-1], self.n_classes)
         )
 
+        self.init_weights(pretrained=self.pretrained)
         self.freeze_stages()
 
     def _setup_repeats(self, num_repeats):
@@ -191,9 +194,11 @@ class EfficientNetBackBone(EfficientNet):
 
     def __init__(self, **kwargs):
         super(EfficientNetBackBone, self).__init__(**kwargs)
+        # pretrained weights are loaded in super().__init__ function
+        # so the only step is to delete the head
+        self.init_weights()
 
-    def init_weights(self, pretrained=None):
-        super().init_weights(pretrained)
+    def init_weights(self):
         del self.head
 
     def forward(self, x):

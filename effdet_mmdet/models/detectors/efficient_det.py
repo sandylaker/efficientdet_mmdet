@@ -36,5 +36,10 @@ class EfficientDet(SingleStageDetector):
                           'in_channels': bifpn_width,
                           'feat_channels': bifpn_width})
 
-        super(EfficientDet, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                           test_cfg, pretrained)
+        super(EfficientDet, self).__init__(
+            backbone=backbone,
+            neck=neck,
+            bbox_head=bbox_head,
+            train_cfg=train_cfg,
+            test_cfg=test_cfg,
+            pretrained=pretrained)

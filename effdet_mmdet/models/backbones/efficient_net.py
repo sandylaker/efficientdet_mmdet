@@ -131,7 +131,12 @@ class EfficientNet(nn.Module):
             nn.Linear(self.list_channels[-1], self.n_classes)
         )
 
-        self.init_weights(pretrained=self.pretrained)
+        if isinstance(pretrained, str):
+            load_checkpoint(self, pretrained)
+        elif pretrained is None:
+            self.apply(init_weights)
+        else:
+            raise TypeError('pretrained must be a str or None')
         self.freeze_stages()
 
     def _setup_repeats(self, num_repeats):
@@ -147,14 +152,6 @@ class EfficientNet(nn.Module):
         if new_num_channels < 0.9 * num_channels:
             new_num_channels += self.divisor
         return new_num_channels
-
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            load_checkpoint(self, pretrained)
-        elif pretrained is None:
-            self.apply(init_weights)
-        else:
-            raise TypeError('pretrained must be a str or None')
 
     def freeze_stages(self):
         if self.frozen_stages >= 0:
@@ -196,9 +193,6 @@ class EfficientNetBackBone(EfficientNet):
         super(EfficientNetBackBone, self).__init__(**kwargs)
         # pretrained weights are loaded in super().__init__ function
         # so the only step is to delete the head
-        self.init_weights()
-
-    def init_weights(self):
         del self.head
 
     def forward(self, x):

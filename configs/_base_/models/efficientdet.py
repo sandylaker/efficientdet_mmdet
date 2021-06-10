@@ -1,7 +1,8 @@
-custom_imports = dict(imports=['effdet_mmdet.models.backbones',
-                               'effdet_mmdet.models.necks',
-                               'effdet_mmdet.models.heads',
-                               'effdet_mmdet.models.detectors'],
+custom_imports = dict(
+    imports=['effdet_mmdet.models.backbones.efficient_net',
+             'effdet_mmdet.models.necks.bifpn',
+             'effdet_mmdet.models.heads.efficient_head',
+             'effdet_mmdet.models.detectors.efficient_det'],
                       allow_failed_imports=False)
 
 pretrained = 'pretrained/tf_efficientnet_b1_ns-99dd0c41.pth'   # Modify
@@ -45,23 +46,21 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(
             type='L1Loss',
-            loss_weight=1.0))
-)
-
-# training and testing settings
-train_cfg = dict(
-    assigner=dict(
-        type='MaxIoUAssigner',
-        pos_iou_thr=0.5,
-        neg_iou_thr=0.4,
-        min_pos_iou=0,
-        ignore_iof_thr=-1),
-    allowed_border=-1,
-    pos_weight=-1,
-    debug=False)
-test_cfg = dict(
-    nms_pre=1000,
-    min_bbox_size=0,
-    score_thr=0.05,
-    nms=dict(type='nms', iou_threshold=0.5),
-    max_per_img=100)
+            loss_weight=1.0)),
+    # training and testing settings
+    train_cfg=dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0,
+            ignore_iof_thr=-1),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
+    test_cfg=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100))

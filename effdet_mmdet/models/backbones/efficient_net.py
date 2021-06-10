@@ -185,7 +185,7 @@ def load_checkpoint(model: EfficientNet, pretrained:str):
     print('Imcompatible keys:', imcompatible_keys)
 
 
-@BACKBONES.register_module()
+@BACKBONES.register_module(name='EfficientNet')
 class EfficientNetBackBone(EfficientNet):
     out_indices = (2, 4, 6)
 

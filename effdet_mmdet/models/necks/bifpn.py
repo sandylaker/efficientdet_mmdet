@@ -19,6 +19,7 @@ class BiFPN(nn.Module):
         assert isinstance(in_channels_list, list)
         assert len(in_channels_list) == 3, f"Length of input feature maps list should be 3, " \
                                            f"got {len(in_channels_list)}"
+        self.fp16_enabled = False
 
         self.in_channels_list = in_channels_list
         self.out_channels = out_channels

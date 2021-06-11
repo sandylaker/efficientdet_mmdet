@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init, Swish
+from mmcv.runner import auto_fp16
 from .utils import WeightedAdd, DepthwiseSeparableConvModule
 from functools import partial
 from mmdet.models import NECKS
@@ -140,6 +141,7 @@ class SingleBiFPN(nn.Module):
                 pw_act_cfg=None)
             self.conv_bu.update({name_bu: conv_module})
 
+    @auto_fp16()
     def forward(self, feats):
         if self.stack_idx == 0:
             c3, c4, c5 = feats
